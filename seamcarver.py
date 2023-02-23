@@ -65,8 +65,7 @@ def remove_seam(image, seam):
 
 def seam_carving(image, num_seams):
     # Convert the image to a NumPy array
-    image = np.array(image)
-    
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     # Calculate the energy of each pixel
     energy = calculate_energy(image)
     
@@ -80,12 +79,11 @@ def seam_carving(image, num_seams):
         energy = calculate_energy(image)
     
     # Convert the modified image back to a PIL image and return it
-    im = Image.fromarray((image * 255).astype(np.uint8))
+    im = Image.fromarray((image).astype(np.uint8))
     return im
 
 # Load the image and display it
-image = Image.open('image.jpg')
-image.show()
+image = cv2.imread('image.jpg')
 
 # Run the seam carving algorithm and display the modified image
 modified_image = seam_carving(image, 100)
