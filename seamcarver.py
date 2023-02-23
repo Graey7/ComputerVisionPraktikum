@@ -53,9 +53,9 @@ def remove_seam(image, seam):
         for i in range(image.shape[0]):
             # Remove the pixel at the seam index
             if(seam[i] ==  image.shape[1]):
-                new_image[i, :, j] = image[i, :(seam[i]-1), j]
+                new_image[i, :, j] = image[i, :(seam[i]), j]
             elif(seam[i] == 0):
-                new:image[i, :, j] = image[i, (seam[i] + 1):, j]
+                new_image[i, :, j] = image[i, (seam[i] + 1):, j]
             else:
                 new_image[i, :seam[i], j] = image[i, :(seam[i]), j]
                 new_image[i, seam[i]:, j] = image[i, (seam[i]+1):, j]
