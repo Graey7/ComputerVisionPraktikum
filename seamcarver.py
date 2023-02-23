@@ -1,45 +1,65 @@
 import numpy as np
-from scipy.ndimage.filters import sobel
+import cv2
 from PIL import Image
 
-def calculate_energy(image):
-    # Calculate the gradient magnitude using the Sobel operator
-    gradient_magnitude = np.sqrt(sobel(image, axis=0)**2 + sobel(image, axis=1)**2)
-    return gradient_magnitude
+def calculate_energy(img):
+    # Calculate the energy of each pixel using the Sobel operator
+    img = np.float32(img)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    f_x = cv2.Sobel(img, -1, dx=1, dy=0)
+    f_y = cv2.Sobel(img, -1, dx=0, dy=1)
+    energy = abs(f_x) + abs(f_y)
+    return energy
 
-def calculate_seam(image, energy):
-    # Create an empty seam list
-    seam = []
+def calculate_seam(energy):
+    backtrack = np.empty(energy.shape, dtype=np.int64)
     
-    # Iterate through the rows of the image
-    for i in range(image.shape[0]):
-        # If this is the first row, add the indices of the lowest energy pixels to the seam
-        if i == 0:
-            seam.append(np.argmin(energy[i]))
-        else:
-            # Find the lowest energy pixel in the previous row
-            prev_index = seam[i-1]
-            # Check the pixels to the left, center, and right of the previous pixel
-            # and choose the one with the lowest energy
-            choices = [prev_index-1, prev_index, prev_index+1]
-            energies = [energy[i, j] for j in choices]
-            min_index = np.argmin(energies)
-            print(min_index)
-            seam.append(choices[min_index])
+    M = np.empty(energy.shape)
+    M[0] = energy[0]
 
+    # iterate through row
+    for i in range(1, energy.shape[0]):
+        # iterate through columns
+        for j in range(energy.shape[1]):
     
-    return seam
+            # prevent index error -1
+            if j == 0:
+                M[i][j] = energy[i][j] + min(M[i-1][j], M[i-1][j+1])
+                backtrack[i-1][j] = np.argmin(M[i-1, j:j+2]) + j
+            # prevent index error 
+            elif j == energy.shape[1]-1:
+                M[i][j] = energy[i][j] + min(M[i-1][j-1], M[i-1][j])
+                backtrack[i-1][j] = np.argmin(M[i-1, j-1:j+1]) + j - 1
+            else:
+                M[i][j] = energy[i][j] + min(M[i-1][j-1], M[i-1][j], M[i-1][j+1])
+                backtrack[i-1][j] = np.argmin(M[i-1, j-1:j+2]) + j - 1
+
+    # backtrack for seam 
+    seam = np.empty(energy.shape[0], dtype=np.int64)
+    j = np.argmin(M[-1])
+    seam[0] = j
+    for i in range(1,energy.shape[0]):    
+        j = backtrack[energy.shape[0]-i-1,j]
+        seam[i] = j
+
+    return seam[::-1]
 
 def remove_seam(image, seam):
-    # Create a copy of the image with an extra column of pixels
-    new_image = np.zeros((image.shape[0], image.shape[1]+1, 3), dtype=np.uint8)
-    new_image[:, 1:] = image
+    # Create a copy of the image with one less column
+    new_image = np.zeros((image.shape[0], image.shape[1]-1, image.shape[2]))
     
     # Iterate through the rows of the image
-    for i in range(image.shape[0]):
-        # Remove the pixel at the seam index
-        new_image[i, :seam[i]] = image[i, :seam[i]]
-        new_image[i, seam[i]+1:] = image[i, seam[i]:]
+    for j in range(image.shape[2]):
+        for i in range(image.shape[0]):
+            # Remove the pixel at the seam index
+            if(seam[i] ==  image.shape[1]):
+                new_image[i, :, j] = image[i, :(seam[i]-1), j]
+            elif(seam[i] == 0):
+                new:image[i, :, j] = image[i, (seam[i] + 1):, j]
+            else:
+                new_image[i, :seam[i], j] = image[i, :(seam[i]), j]
+                new_image[i, seam[i]:, j] = image[i, (seam[i]+1):, j]
+
     
     return new_image
 
@@ -53,19 +73,20 @@ def seam_carving(image, num_seams):
     # Remove the specified number of seams from the image
     for i in range(num_seams):
         # Calculate the minimum energy seam
-        seam = calculate_seam(image, energy)
+        seam = calculate_seam(energy)
         # Remove the seam from the image
         image = remove_seam(image, seam)
         # Recalculate the energy of the image
         energy = calculate_energy(image)
     
     # Convert the modified image back to a PIL image and return it
-    return Image.fromarray(image)
+    im = Image.fromarray((image * 255).astype(np.uint8))
+    return im
 
 # Load the image and display it
 image = Image.open('image.jpg')
 image.show()
 
 # Run the seam carving algorithm and display the modified image
-modified_image = seam_carving(image, 10)
+modified_image = seam_carving(image, 100)
 modified_image.show()
