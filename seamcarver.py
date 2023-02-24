@@ -82,10 +82,16 @@ def seam_carving(image, num_seams):
     im = Image.fromarray((image).astype(np.uint8))
     return im
 
+def main(file, carve_num_seams):
+    image = cv2.imread(file)
+    modified_image = seam_carving(image, carve_num_seams)
+    modified_image.save(file + "_carved.png")
+    modified_image.show()
+    
 # Load the image and display it
-image = cv2.imread('image.png')
+#image = cv2.imread('image.png')
 
 # Run the seam carving algorithm and display the modified image
-modified_image = seam_carving(image, 100)
-modified_image.show()
-modified_image.save("Seam_Carved_image.png")
+#modified_image = seam_carving(image, 100)
+#modified_image.show()
+#modified_image.save("Seam_Carved_image.png")

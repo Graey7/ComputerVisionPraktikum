@@ -57,7 +57,6 @@ def carve():
     string = entry.get()
     print("Carving...")
     sc.main(inputdialog.cget("text"), int(string))
-    print(string)
 
 entry = tk.Entry(scframe)
 entry.focus_set()
