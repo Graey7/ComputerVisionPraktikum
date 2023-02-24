@@ -13,9 +13,7 @@ root = tk.Tk()
 root.geometry("600x400")
 root.resizable(False, False)
 
-photo = tk.PhotoImage(file = "icon.png")
-
-root.wm_iconphoto = (photo)
+root.iconbitmap("icon.ico")
 
 root.title('Seam Carving')
 
@@ -48,7 +46,7 @@ open_button = ttk.Button(
 )
 open_button.pack(expand=True)
 
-carvelabel = tk.Label(scframe, text = "Input number of pixels to be carved:")
+carvelabel = tk.Label(scframe, text = "Input number of seams to be carved:")
 carvelabel.pack()
 
 
