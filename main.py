@@ -38,6 +38,7 @@ inputdialog = ctk.CTkLabel(scframe, text = "Filepath: ",
                            compound = "left")
 inputdialog.pack(padx = 2, pady = 2)
 
+temp = ctk.CTkLabel(scframe, text = "Empty")
 
 def open_file():
     filetypes = (
@@ -53,6 +54,8 @@ def open_file():
         inputdialog.configure(text = "Filepath: " + filename[:28] + "[...]")
     else:
         inputdialog.configure(text = "Filepath: " + filename)
+    temp.configure(text = filename)
+    return filename
 
 
 
@@ -71,7 +74,10 @@ def carve():
     global entry
     string = entry.get()
     print("Carving...")
-    sc.main(inputdialog.cget("text"), int(string))
+    if(temp.cget("text") == "Empty"):
+        showinfo(title = "Error", message = "Please select an image to carve.")
+    else:
+        sc.main(temp.cget("text"), int(string))
 
 entry = ctk.CTkEntry(scframe)
 entry.focus_set()

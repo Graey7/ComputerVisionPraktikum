@@ -1,3 +1,4 @@
+from datetime import datetime
 import numpy as np
 import cv2
 from PIL import Image
@@ -72,7 +73,10 @@ def seam_carving(image, num_seams):
     # Remove the specified number of seams from the image
     for i in range(num_seams):
         # Calculate the minimum energy seam
+        init = datetime.now()
         seam = calculate_seam(energy)
+        time = (datetime.now() - init)
+        print("Calculating seam took: " + str(time) + " seconds")
         # Remove the seam from the image
         image = remove_seam(image, seam)
         # Recalculate the energy of the image
@@ -89,7 +93,7 @@ def main(file, carve_num_seams):
     modified_image.show()
     
 # Load the image and display it
-#image = cv2.imread('image.png')
+#image = cv2.imread('test.png')
 
 # Run the seam carving algorithm and display the modified image
 #modified_image = seam_carving(image, 100)
