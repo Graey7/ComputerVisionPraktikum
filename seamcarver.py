@@ -45,6 +45,36 @@ def calculate_seam(energy):
 
     return seam[::-1]
 
+def calculate_seam2(energy):
+    # initialize backtrack and M matrices
+    backtrack = np.zeros_like(energy, dtype=np.int64)
+    M = np.zeros_like(energy)
+
+    # set first row of M to be the same as the energy matrix
+    M[0] = energy[0]
+
+    # iterate through the rows of M and backtrack matrices
+    for i in range(1, energy.shape[0]):
+        # calculate the cumulative energy using the minimum of the previous row's cumulative energy
+        # values and add the current energy value at (i,j)
+        M[i, 0] = energy[i, 0] + np.min(M[i-1, 0:2])
+        backtrack[i-1, 0] = np.argmin(M[i-1, 0:2])
+
+        M[i, 1:-1] = energy[i, 1:-1] + np.minimum.reduce([M[i-1, :-2], M[i-1, 1:-1], M[i-1, 2:]])
+        backtrack[i-1, 1:-1] = np.argmin(np.vstack([M[i-1, :-2], M[i-1, 1:-1], M[i-1, 2:]]), axis=0)
+
+        M[i, -1] = energy[i, -1] + np.min(M[i-1, -2:])
+        backtrack[i-1, -1] = np.argmin(M[i-1, -2:]) + energy.shape[1] - 2
+
+    # backtrack to find the seam
+    seam = np.zeros(energy.shape[0], dtype=np.int64)
+    seam[-1] = np.argmin(M[-1])
+
+    for i in range(energy.shape[0]-2, -1, -1):
+        seam[i] = backtrack[i, seam[i+1]]
+
+    return seam
+
 def remove_seam(image, seam):
     # Create a copy of the image with one less column
     new_image = np.zeros((image.shape[0], image.shape[1]-1, image.shape[2]))
@@ -71,17 +101,17 @@ def seam_carving(image, num_seams):
     energy = calculate_energy(image)
     
     # Remove the specified number of seams from the image
+    init = datetime.now()
     for i in range(num_seams):
         # Calculate the minimum energy seam
-        init = datetime.now()
-        seam = calculate_seam(energy)
-        time = (datetime.now() - init)
-        print("Calculating seam took: " + str(time) + " seconds")
+        seam = calculate_seam2(energy)
+
         # Remove the seam from the image
         image = remove_seam(image, seam)
         # Recalculate the energy of the image
         energy = calculate_energy(image)
-    
+    time = (datetime.now() - init)
+    print("Calculating seam took: " + str(time) + " seconds")
     # Convert the modified image back to a PIL image and return it
     im = Image.fromarray((image).astype(np.uint8))
     return im
@@ -93,9 +123,9 @@ def main(file, carve_num_seams):
     modified_image.show()
     
 # Load the image and display it
-#image = cv2.imread('test.png')
+image = cv2.imread('test.png')
 
 # Run the seam carving algorithm and display the modified image
-#modified_image = seam_carving(image, 100)
-#modified_image.show()
-#modified_image.save("Seam_Carved_image.png")
+modified_image = seam_carving(image, 100)
+modified_image.show()
+modified_image.save("Seam_Carved_image.png")
