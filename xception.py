@@ -196,7 +196,6 @@ class Xception(nn.Module):
         x = F.adaptive_avg_pool2d(x, (1, 1))
         x = x.view(x.size(0), -1)
         
-        
         if self.output == 'xc-svm':
             pass
         if self.output == 'fc-svm':
@@ -219,9 +218,3 @@ def xception(pretrained=False,**kwargs):
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['xception']))
     return model
-
-model = xception(output='xc-svm')
-
-x = torch.rand(1, 3, 299, 299)
-y_hat = model(x)
-print(y_hat)
