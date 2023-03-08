@@ -105,7 +105,8 @@ def seam_carving(image, num_seams):
     init = datetime.now()
     for i in range(num_seams):
         # Calculate the minimum energy seam
-        seam = calculate_seam2(energy)
+        #TODO calculateseam2???
+        seam = calculate_seam(energy)
 
         # Remove the seam from the image
         image = remove_seam(image, seam)
