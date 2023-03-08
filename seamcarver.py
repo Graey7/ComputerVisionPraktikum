@@ -2,6 +2,7 @@ from datetime import datetime
 import numpy as np
 import cv2
 from PIL import Image
+import os
 
 def calculate_energy(img):
     # Calculate the energy of each pixel using the Sobel operator
@@ -122,10 +123,60 @@ def main(file, carve_num_seams):
     modified_image.save(file + "_carved.png")
     modified_image.show()
     
-# Load the image and display it
-#image = cv2.imread('test.png')
+#carve everything
+def carve_all(percent):
+	# make new directory
+    newpath = 'carved_' + str(percent) #r'C:\Program Files\arbitrary' 
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    		
+    directory = os.fsencode('uncarved_dataset')
+    
+    # for all images
+    for file in os.listdir(directory):
+        image_name = os.fsdecode(file)
+        full_filename = 'uncarved_dataset/' + image_name
+        number_seams = calculate_number_of_seams(percent, full_filename)
+        #carve image
+        image = cv2.imread(full_filename)
+        mod_image = seam_carving(image, number_seams)
+        #mod_image = resize_image(mod_image)
+        #save new image
+        #TODO saving in the right directory
+        mod_image.save(newpath + '/carved_'+ str(percent) + '_' + image_name)
 
-# Run the seam carving algorithm and display the modified image
-#modified_image = seam_carving(image, 100)
-#modified_image.show()
-#modified_image.save("Seam_Carved_image.png")
+
+def calculate_number_of_seams(percent, image):
+    im = Image.open(image)
+    width, height = im.size
+    result = (percent/100) * width
+    result = round(result)
+    return result
+
+def testrun():
+	# Load the image and display it
+	image = cv2.imread('test.png')
+	# Run the seam carving algorithm and display the modified image
+	modified_image = seam_carving(image, 100)
+	modified_image.show()
+	modified_image.save("Seam_Carved_image.png")
+
+def carve_all_10times():
+	#carve all pictures with 3% 6% 9% 12% 15% 18% 21% 30% 40% 50%
+	carve_all(3)
+	carve_all(6)
+	carve_all(9)
+	carve_all(12)
+	carve_all(15)
+	carve_all(18)
+	carve_all(21)
+	carve_all(30)
+	carve_all(40)
+	carve_all(50)
+
+
+#testrun()
+
+
+carve_all_10times()
+

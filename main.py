@@ -18,7 +18,8 @@ root = ctk.CTk()
 root.geometry("515x190")
 root.resizable(False, False)
 
-root.iconbitmap("icon.ico")
+#root.iconbitmap('icon.ico')
+#root.iconbitmap(r'ComputerVisionPraktikum/icon.ico')
 
 root.title('Seam Carving')
 
