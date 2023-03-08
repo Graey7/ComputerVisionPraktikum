@@ -105,7 +105,7 @@ def seam_carving(image, num_seams):
     init = datetime.now()
     for i in range(num_seams):
         # Calculate the minimum energy seam
-        #TODO calculateseam2???
+        #TODO calculateseam2 wurde hier ersetzt
         seam = calculate_seam(energy)
 
         # Remove the seam from the image
@@ -124,26 +124,31 @@ def main(file, carve_num_seams):
     modified_image.save(file + "_carved.png")
     modified_image.show()
     
-#carve everything
-def carve_all(percent):
+#carve everything , takes the picture from the optvalue-folder to increase performance
+def carve_all(percent, optvalue):
 	# make new directory
     newpath = 'carved_' + str(percent) #r'C:\Program Files\arbitrary' 
     if not os.path.exists(newpath):
         os.makedirs(newpath)
-    		
-    directory = os.fsencode('uncarved_dataset')
+    
+    if (optvalue == 0):
+    	directory_string = 'uncarved_dataset'
+    else:
+    	directory_string = 'carved_' + str(optvalue)
+    
+    directory = os.fsencode(directory_string)
     
     # for all images
     for file in os.listdir(directory):
         image_name = os.fsdecode(file)
-        full_filename = 'uncarved_dataset/' + image_name
-        number_seams = calculate_number_of_seams(percent, full_filename)
+        full_filename = directory_string + '/' + image_name
+        number_seams = calculate_number_of_seams(percent - optvalue, full_filename)
         #carve image
         image = cv2.imread(full_filename)
         mod_image = seam_carving(image, number_seams)
         #mod_image = resize_image(mod_image)
         #save new image
-        #TODO saving in the right directory
+        image_name = image_name[-8:]
         mod_image.save(newpath + '/carved_'+ str(percent) + '_' + image_name)
 
 
@@ -164,16 +169,16 @@ def testrun():
 
 def carve_all_10times():
 	#carve all pictures with 3% 6% 9% 12% 15% 18% 21% 30% 40% 50%
-	carve_all(3)
-	carve_all(6)
-	carve_all(9)
-	carve_all(12)
-	carve_all(15)
-	carve_all(18)
-	carve_all(21)
-	carve_all(30)
-	carve_all(40)
-	carve_all(50)
+	carve_all(3,0)
+	carve_all(6,3)
+	carve_all(9,6)
+	carve_all(12,9)
+	carve_all(15,12)
+	carve_all(18,15)
+	carve_all(21,18)
+	carve_all(30,21)
+	carve_all(40,30)
+	carve_all(50,40)
 
 
 #testrun()
