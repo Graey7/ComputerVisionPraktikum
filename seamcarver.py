@@ -131,8 +131,9 @@ def carve_all(percent, optvalue):
     if not os.path.exists(newpath):
         os.makedirs(newpath)
     
+    #set sourcedirectory
     if (optvalue == 0):
-    	directory_string = 'uncarved_dataset'
+    	directory_string = 'resized_dataset'
     else:
     	directory_string = 'carved_' + str(optvalue)
     
@@ -150,6 +151,7 @@ def carve_all(percent, optvalue):
         #save new image
         image_name = image_name[-8:]
         mod_image.save(newpath + '/carved_'+ str(percent) + '_' + image_name)
+        print('carved with ' + str(percent) + ': ' + image_name) 
 
 
 def calculate_number_of_seams(percent, image):
@@ -180,9 +182,30 @@ def carve_all_10times():
 	carve_all(40,30)
 	carve_all(50,40)
 
-
+def resize_all(x,y):
+	# make new directory
+	newpath = 'resized_dataset'
+	if not os.path.exists(newpath):
+		os.makedirs(newpath)
+	directory_string = 'uncarved_dataset'
+	directory = os.fsencode(directory_string)
+	
+	for file in os.listdir(directory):
+		image_name = os.fsdecode(file)
+		full_filename = directory_string + '/' + image_name
+        #carve image
+		img = Image.open(full_filename)
+		#img = img.resize(x,y)
+		img = img.resize((x,y), Image.Resampling.LANCZOS)
+        #mod_image = resize_image(mod_image)
+        #save new image
+		image_name = image_name[-8:]
+		img.save(newpath + '/resized_' + image_name)
+		print('resized: ' + image_name)
+	
+	
 #testrun()
 
-
-carve_all_10times()
+resize_all(500,500)
+#carve_all_10times()
 
