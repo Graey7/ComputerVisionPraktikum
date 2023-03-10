@@ -7,6 +7,15 @@ import torchvision.transforms as transforms
 
 
 def compress_img(image_name):
+    img = Image.open(f"./input/{image_name}")
+    img = img.resize((224, 224), Image.Resampling.LANCZOS)
+    
+    #filename, ext = os.path.splitext(image_name)
+    #new_filename = f"{filename}_compressed.jpg"
+    #img.save(f"./output/{new_filename}")
+    return img
+
+def compress_img_old(image_name):
     # load the image to memory
     img = Image.open(f"./input/{image_name}")
     # print the original image shape
@@ -71,4 +80,4 @@ for file in os.listdir(directory):
     print(img_tensor.shape,"\n")
 
     filename, ext = os.path.splitext(filename)
-    torch.save(img_tensor, f'./output/{filename}.t')
+    torch.save(img_tensor, f'./output/{filename}.pt')
