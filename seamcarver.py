@@ -192,6 +192,7 @@ def resize_all(x,y):
 	
 	for file in os.listdir(directory):
 		image_name = os.fsdecode(file)
+		print('resizing: ' + image_name)
 		full_filename = directory_string + '/' + image_name
         #carve image
 		img = Image.open(full_filename)
@@ -206,6 +207,6 @@ def resize_all(x,y):
 	
 #testrun()
 
-resize_all(500,500)
-#carve_all_10times()
+resize_all(448,448)
+carve_all_10times()
 
