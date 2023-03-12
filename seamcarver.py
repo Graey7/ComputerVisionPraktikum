@@ -3,6 +3,8 @@ import numpy as np
 import cv2
 from PIL import Image
 import os
+import multiprocessing
+import time
 
 def calculate_energy(img):
     # Calculate the energy of each pixel using the Sobel operator
@@ -126,6 +128,7 @@ def main(file, carve_num_seams):
     
 #carve everything , takes the picture from the optvalue-folder to increase performance
 def carve_all(percent, optvalue):
+
 	# make new directory
     newpath = 'carved_' + str(percent) #r'C:\Program Files\arbitrary' 
     if not os.path.exists(newpath):
@@ -143,6 +146,9 @@ def carve_all(percent, optvalue):
     for file in os.listdir(directory):
         image_name = os.fsdecode(file)
         full_filename = directory_string + '/' + image_name
+        
+        #put multithreading here
+        
         number_seams = calculate_number_of_seams(percent - optvalue, full_filename)
         #carve image
         image = cv2.imread(full_filename)
@@ -151,7 +157,7 @@ def carve_all(percent, optvalue):
         #save new image
         image_name = image_name[-8:]
         mod_image.save(newpath + '/carved_'+ str(percent) + '_' + image_name)
-        print('carved with ' + str(percent) + ': ' + image_name) 
+        print('carved with ' + str(percent) + '%: ' + image_name) 
 
 
 def calculate_number_of_seams(percent, image):
@@ -160,7 +166,64 @@ def calculate_number_of_seams(percent, image):
     result = (percent/100) * width
     result = round(result)
     return result
+    
+    
+def multi_carveall(percent, optvalue):
+	#CPU count
+	cpu_count = multiprocessing.cpu_count()
+	print('CPU count:'+ str(cpu_count))
+    
+    # make new directory
+	newpath = 'carved_' + str(percent) #r'C:\Program Files\arbitrary' 
+	if not os.path.exists(newpath):
+		os.makedirs(newpath)
+    
+    #set sourcedirectory
+	if (optvalue == 0):
+		directory_string = 'resized_dataset'
+	else:
+		directory_string = 'carved_' + str(optvalue)
+    
+	directory = os.fsencode(directory_string)
+	
+	
+	try:
+    	# Setup multiprocessing pool
+		pool = multiprocessing.Pool(processes = cpu_count)
+	
+	
+	
+		#init iterable for starmap()
+		multilist = []
+		#i = 0
+		for file in os.listdir(directory):
+			image_name = os.fsdecode(file)
+			full_filename = directory_string + '/' + image_name
+			#create iterable for starmap
+			#print ('iterator: ' + str(i))
+			multilist.append((image_name, full_filename, percent, optvalue, newpath))
+			#i = i + 1
+		
+		for j in range(len(multilist)):
+			print (multilist[j])
+		# Multi Process Images
+		pool.starmap(multiseamcarving, multilist)
+	
+	finally:
+		pool.close()
+		pool.join()
 
+
+def multiseamcarving(image_name, full_filename, percent, optvalue, newpath):
+	#calc how oftem to carve
+	number_seams = calculate_number_of_seams(percent - optvalue, full_filename)
+	image = cv2.imread(full_filename)
+	mod_image = seam_carving(image, number_seams)
+	#save image
+	image_name = image_name[-8:]
+	mod_image.save(newpath + '/carved_'+ str(percent) + '_' + image_name)
+	print('multicarved with ' + str(percent) + '%: ' + image_name)
+	
 def testrun():
 	# Load the image and display it
 	image = cv2.imread('test.png')
@@ -171,16 +234,26 @@ def testrun():
 
 def carve_all_10times():
 	#carve all pictures with 3% 6% 9% 12% 15% 18% 21% 30% 40% 50%
-	carve_all(3,0)
-	carve_all(6,3)
-	carve_all(9,6)
-	carve_all(12,9)
-	carve_all(15,12)
-	carve_all(18,15)
-	carve_all(21,18)
-	carve_all(30,21)
-	carve_all(40,30)
-	carve_all(50,40)
+	#carve_all(3,0)
+	multi_carveall(3,0)
+	#carve_all(6,3)
+	multi_carveall(6, 3)
+	#carve_all(9,6)
+	multi_carveall(9, 3)
+	#carve_all(12,9)
+	multi_carveall(12, 9)
+	#carve_all(15,12)
+	multi_carveall(15, 12)
+	#carve_all(18,15)
+	multi_carveall(18, 15)
+	#carve_all(21,18)
+	multi_carveall(21, 18)
+	#carve_all(30,21)
+	multi_carveall(30, 21)
+	#carve_all(40,30)
+	multi_carveall(40, 30)
+	#carve_all(50,40)
+	multi_carveall(50, 40)
 
 def resize_all(x,y):
 	# make new directory
@@ -206,7 +279,8 @@ def resize_all(x,y):
 	
 	
 #testrun()
-
+start_time = time.time()
 resize_all(448,448)
 carve_all_10times()
+print('time: {0} [sec]'.format(time.time() - start_time))
 
