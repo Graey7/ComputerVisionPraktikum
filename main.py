@@ -8,7 +8,7 @@ import utils
 import albumentations as A
 from train import train, test
 # GET DATA
-data_path = '/Users/emiledehn/Downloads/carved_dataset'
+data_path = 'C:/Users/timol/Documents/GitHub/ComputerVisionPraktikum/dataset'
 data = extract_data(path=data_path)
 folds = make_k_folds(data=data, k=5)
 
@@ -31,11 +31,11 @@ test_transform = A.Compose([
 ])
 
 # TRAINING
-epochs = 1
+epochs = 5
 # TODO: balance batch in pytorch, keyword: sampler?
-batch_size = 16
+batch_size = 32
 valid_size = 0.1
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+device = 'cuda' #if torch.cuda.is_available() else 'cpu'
 print(device)
 
 model_name = ''
@@ -69,8 +69,8 @@ for i in tqdm(range(len(folds)), desc='step'):
 
     # DATA LOADERS FOR TRAINING
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-    valid_loader = DataLoader(dataset=valid_dataset, batch_size=len(valid_data), shuffle=True)
-    test_loader = DataLoader(dataset=test_dataset, batch_size=len(test_data), shuffle=True)
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
     
     # TRAIN MODEL
     model, train_loss, valid_loss, train_acc, valid_acc = train(train_data=train_loader, valid_data=valid_loader, epochs=epochs, device=device)

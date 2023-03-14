@@ -51,6 +51,7 @@ def make_valid_step(model, loss_fn, accuracy_fn):
 def train(train_data, valid_data, epochs, device):
     # INIT MODEL
     model = xception(output='softmax', pretrained=False)
+    model = model.to(device)
 
     # INIT LOSS
     loss_fn = torch.nn.BCELoss()
@@ -82,7 +83,10 @@ def train(train_data, valid_data, epochs, device):
         # TRAIN STEP
         tmp_train_loss = []
         tmp_train_acc = []
+        counter = 0
         for x_batch, y_batch in train_data:
+            counter += 1
+            print(counter)
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
 
@@ -91,8 +95,6 @@ def train(train_data, valid_data, epochs, device):
 
             tmp_train_loss.append(loss)
             tmp_train_acc.append(accuracy)
-
-            print('NICE')
         
         # CALCULATE MODEL TRAIN METRICS FOR EPOCH
         train_loss.append(np.mean(tmp_train_loss))
