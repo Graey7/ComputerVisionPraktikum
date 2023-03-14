@@ -1,182 +1,100 @@
-import tkinter as tk
-import customtkinter as ctk
-from tkinter import filedialog as fd
-from tkinter import ttk
-from tkinter.messagebox import showinfo
-from PIL import Image, ImageTk
+import os
+import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from data import DatasetSeamCarved, make_k_folds, extract_data
+from albumentations.pytorch import ToTensorV2
+import utils
+import albumentations as A
+from train import train, test
+# GET DATA
+data_path = '/Users/emiledehn/Downloads/carved_dataset'
+data = extract_data(path=data_path)
+folds = make_k_folds(data=data, k=5)
 
-import seamcarver as sc
+# PRE PROCESS DATA
+train_transform = A.Compose([
+    A.Resize(256, 256), 
+    A.RandomCrop(224, 224),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    A.HorizontalFlip(p = 0.5), 
+    A.VerticalFlip(p = 0.5),
+    A.GaussNoise(mean = 0, var_limit=(0.2), p=0.5),
+    ToTensorV2()
+])
 
-#Appearance
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("green")
+test_transform = A.Compose([    
+    A.Resize(256, 256), 
+    A.RandomCrop(224, 224),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ToTensorV2()
+])
 
-# Create the main window
-root = ctk.CTk()
+# TRAINING
+epochs = 1
+# TODO: balance batch in pytorch, keyword: sampler?
+batch_size = 16
+valid_size = 0.1
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+print(device)
 
-# Set the window size
-root.geometry("515x190")
-root.resizable(False, False)
+model_name = ''
+model_path = f'models/model_name/'
+graph_path = f'{model_path}/evaluation/'
 
-root.iconbitmap("icon.ico")
+training_loss, validation_loss = [], []
+training_acc, validation_acc = [], []
+testing_acc = []
 
-root.title('Seam Carving')
+# k-FOLD-CROSS-VALIDATION LOOP
+for i in tqdm(range(len(folds)), desc='step'):
+    
+    # SPLIT DATA ACCORDING TO FOLD INTO TEST AND TRAINING/VALIDATION DATA
+    train_data = []
+    for j in range(len(folds)):
+        if i == j:
+            test_data = folds[j]
+        else:
+            train_data.extend(folds[j])
 
-#Frame for the seam carver---------------------------------------------------------------
-scframe = ctk.CTkFrame(root, 
-                       width = 280, 
-                       height = 400, 
-                       border_width = 2)
-scframe.grid()
-scframe.grid_propagate(False)
+    # SPLIT DATA SET INTO TRAINING AND VALIDATION
+    train_size = int((1-valid_size) * len(train_data))
+    test_size = len(train_data) - train_size
+    train_data, valid_data = torch.utils.data.random_split(train_data, [train_size, test_size])
+    
+    # DATASETS FOR DATA LOADERS
+    train_dataset = DatasetSeamCarved(train_data, train_transform)
+    valid_dataset = DatasetSeamCarved(valid_data, test_transform)
+    test_dataset = DatasetSeamCarved(test_data, test_transform)
 
-inputlabel = ctk.CTkLabel(scframe, text = "Enter the path to the image:")
-inputlabel.pack(padx = 2, pady = 2)
+    # DATA LOADERS FOR TRAINING
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=len(valid_data), shuffle=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=len(test_data), shuffle=True)
+    
+    # TRAIN MODEL
+    model, train_loss, valid_loss, train_acc, valid_acc = train(train_data=train_loader, valid_data=valid_loader, epochs=epochs, device=device)
+    # GET MODEL METRICS FOR EVALUATION
+    training_loss.append(train_loss)
+    validation_loss.append(valid_loss)
+    training_acc.append(train_acc)
+    validation_acc.append(valid_acc)
+    
+    # TEST MODEL
+    test_acc = test(model, test_data=test_loader, device=device)
+    # GET MODEL METRICS FOR EVALUATION
+    testing_acc.append(test_acc)
 
-inputdialog = ctk.CTkLabel(scframe, text = "Filepath: ", 
-                           width = 250, 
-                           height = 10,
-                           anchor = "w",
-                           compound = "left")
-inputdialog.pack(padx = 2, pady = 2)
+    # SAVE MODELS
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
 
-temp = ctk.CTkLabel(scframe, text = "Empty")
+    torch.save(model.state_dict(), f'{model_path}fold{i}')
 
-def open_file():
-    filetypes = (
-        ("PNG files", "*.png"), 
-        ("All files", "*.*")
-        )
-    filename = fd.askopenfilename(
-        title = "Open a PNG file",
-        initialdir = "/",
-        filetypes = filetypes
-    )
-    if(len(filename)>27):
-        inputdialog.configure(text = "Filepath: " + filename[:28] + "[...]")
-    else:
-        inputdialog.configure(text = "Filepath: " + filename)
-    temp.configure(text = filename)
-    return filename
+# PLOT MODEL EVALUATION
+if not os.path.exists(graph_path):
+    os.makedirs(graph_path)
 
-
-
-open_button = ctk.CTkButton(
-    scframe,
-    text = "Open Image",
-    command = open_file
-)
-open_button.pack(expand=True)
-
-carvelabel = ctk.CTkLabel(scframe, text = "Input number of seams to be carved:")
-carvelabel.pack(padx = 2, pady = 2)
-
-
-def carve():
-    global entry
-    string = entry.get()
-    print("Carving...")
-    if(temp.cget("text") == "Empty"):
-        showinfo(title = "Error", message = "Please select an image to carve.")
-    else:
-        sc.main(temp.cget("text"), int(string))
-
-entry = ctk.CTkEntry(scframe)
-entry.focus_set()
-entry.pack(padx = 2, pady = 2)
-
-
-carvebutton = ctk.CTkButton(scframe, text = "Carve", command = carve)
-carvebutton.pack(padx = 2, pady = 2)
-
-#Frame for the model---------------------------------------------------------------
-modelframe = ctk.CTkFrame(root, 
-                       width = 280, 
-                       height = 400, 
-                       border_width = 2)
-modelframe.grid(column = 1, row = 0, padx = 5)
-modelframe.grid_propagate(False)
-
-modelinputlabel = ctk.CTkLabel(modelframe, text = "Enter the path to the image:")
-modelinputlabel.pack(padx = 2, pady = 2)
-
-modelinputdialog = ctk.CTkLabel(modelframe, text = "Filepath: ", 
-                           width = 250, 
-                           height = 10,
-                           anchor = "w",
-                           compound = "left")
-modelinputdialog.pack(padx = 2, pady = 2)
-
-modeltemp = ctk.CTkLabel(modelframe, text = "Empty")
-
-def open_model():
-    filetypes = (
-        ("Model files", "*.mdl"), 
-        ("All files", "*.*")
-        )
-    modelfilename = fd.askopenfilename(
-        title = "Open a Model",
-        initialdir = "/",
-        filetypes = filetypes
-    )
-    if(len(modelfilename)>27):
-        modelinputdialog.configure(text = "Modelpath: " + modelfilename[:28] + "[...]")
-    else:
-        modelinputdialog.configure(text = "Modelpath: " + modelfilename)
-    modeltemp.configure(text = modelfilename)
-    return modelfilename
-
-
-open_model_button = ctk.CTkButton(
-    modelframe,
-    text = "Open model",
-    command = open_model
-)
-open_model_button.pack(expand=True)
-
-modellabel = ctk.CTkLabel(modelframe, text = "Enter the path to the image:")
-modellabel.pack(padx = 2, pady = 2)
-
-modelimageinputdialog = ctk.CTkLabel(modelframe, text = "Filepath: ", 
-                           width = 250, 
-                           height = 10,
-                           anchor = "w",
-                           compound = "left")
-modelimageinputdialog.pack(padx = 2, pady = 2)
-
-modelimagetemp = ctk.CTkLabel(modelframe, text = "Empty")
-
-def open_modelimage():
-    filetypes = (
-        ("Image files", "*.png"), 
-        ("All files", "*.*")
-        )
-    modelimagefilename = fd.askopenfilename(
-        title = "Open an Image",
-        initialdir = "/",
-        filetypes = filetypes
-    )
-    if(len(modelimagefilename)>27):
-        modelimageinputdialog.configure(text = "Modelpath: " + modelimagefilename[:28] + "[...]")
-    else:
-        modelimageinputdialog.configure(text = "Modelpath: " + modelimagefilename)
-    modelimagetemp.configure(text = modelimagefilename)
-    return modelimagefilename
-
-open_modelimage_button = ctk.CTkButton(
-    modelframe,
-    text = "Open image",
-    command = open_modelimage
-)
-open_modelimage_button.pack(expand=True)
-
-def checkimage():
-    print("Test")
-
-
-
-
-checkimagebutton = ctk.CTkButton(modelframe, text = "Check Image", command = checkimage)
-checkimagebutton.pack(padx = 2, pady = 2)
-# Run the main loop
-root.mainloop()
+utils.make_plots(graph_path, 'Loss', training_loss, validation_loss)
+utils.make_plots(graph_path, 'Accuracy', training_acc, validation_acc)
+utils.make_bars(graph_path, 'Test Accuracy', testing_acc)

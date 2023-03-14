@@ -2,6 +2,8 @@ import torch
 from torchmetrics.classification import BinaryAccuracy
 import numpy as np
 from tqdm import tqdm
+# INSTALL VIA PIP: pip install 'git+https://github.com/katsura-jp/pytorch-cosine-annealing-with-warmup'
+from cosine_annealing_warmup import CosineAnnealingWarmupRestarts
 from xception import xception
 
 # HELPER FUNCTIONS FOR TRAINING LOOP
@@ -10,8 +12,12 @@ def make_train_step(model, loss_fn, optimizer, accuracy_fn):
     def train_step(x, y):
         # SET MODEL TO TRAIN MODE
         model.train()
+        
         # CALCULATE PREDICTION AND LOSS
         yhat = model(x)
+        yhat = yhat.to(torch.float32).squeeze()
+        y = y.to(torch.float32)
+
         loss = loss_fn(yhat, y)
 
         # METRICS
@@ -28,8 +34,12 @@ def make_valid_step(model, loss_fn, accuracy_fn):
     def valid_step(x, y):
         # SET MODEL TO EVALUATION MODE
         model.eval()
+        
         # CALCULATE PREDICTION AND LOSS
         yhat = model(x)
+        yhat = yhat.to(torch.float32).squeeze()
+        y = y.to(torch.float32)
+
         loss = loss_fn(yhat, y)
 
         # METRICS
@@ -40,7 +50,7 @@ def make_valid_step(model, loss_fn, accuracy_fn):
 
 def train(train_data, valid_data, epochs, device):
     # INIT MODEL
-    model = xception(output='softmax', pretrained=True)
+    model = xception(output='softmax', pretrained=False)
 
     # INIT LOSS
     loss_fn = torch.nn.BCELoss()
@@ -48,11 +58,10 @@ def train(train_data, valid_data, epochs, device):
     # INIT OPTIMIZER
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-5)
 
-    # INIT SCHEDULER 
-    # TODO: CHECK CORRECT IMPLEMENTATION FOR SGD WITH RESTARTS
-    ''' https://github.com/katsura-jp/pytorch-cosine-annealing-with-warmup as alternative? '''
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=0.3, eta_mmin=1e-5)
-     
+    # INIT SCHEDULER - not pytorch
+    ''' https://github.com/katsura-jp/pytorch-cosine-annealing-with-warmup '''
+    scheduler = CosineAnnealingWarmupRestarts(optimizer, first_cycle_steps=10, cycle_mult=1, max_lr=1e-1, min_lr=1e-4, warmup_steps=0, gamma=0.3)
+
     # INIT METRICS
     accuracy_metric = BinaryAccuracy()
     accuracy_metric = accuracy_metric.to(device)
@@ -82,6 +91,8 @@ def train(train_data, valid_data, epochs, device):
 
             tmp_train_loss.append(loss)
             tmp_train_acc.append(accuracy)
+
+            print('NICE')
         
         # CALCULATE MODEL TRAIN METRICS FOR EPOCH
         train_loss.append(np.mean(tmp_train_loss))
@@ -118,6 +129,8 @@ def make_test_step(model, accuracy_fn):
         # SET MODEL TO TRAIN MODE
         model.eval()
         yhat = model(x)
+        yhat = yhat.to(torch.float32).squeeze()
+        y = y.to(torch.float32)
 
         # METRICS
         accuracy = accuracy_fn(yhat, y)
