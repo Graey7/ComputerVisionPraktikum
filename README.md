@@ -42,6 +42,25 @@ To detect whether an image has already been resized using Seam Carving, follow t
 3. Click the "Check Image" button.
 4. The GUI will display a message indicating whether the image has already been resized using Seam Carving or not.
 
+## Code
+
+### resize.py
+
+Provides basic functions for cropping the training images.
+
+* loops through folder, crops images and saves then as an pytorch tensor
+* compress_img: save picutre as separated comperessed file in 224x224 format
+
+### seamcarver.py
+
+Implements the Seam Carving functionality.
+
+* calculate_energy: Calculates the energy of each pixel using the Sobel operator
+* calculate_seam: Calculates the seam with minimal energy
+* calculate_seam2: Test function for alternative calculation methods
+* remove_seam: Creates a copy of the image with the calculated seam removed
+* seam_carving: Implements the mentioned functions to remove a specific number of seams
+
 ## License
 
 The Seam Carving GUI is released for Prof. Jiang's Computer Vision lab at WWU.
