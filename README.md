@@ -4,7 +4,7 @@ Welcome to the Seam Carving GUI, a graphical user interface for the Seam Carving
 
 ## Description
 
-The Seam Carving algorithm is a content-aware image resizing technique that reduces the size of an image by selectively removing pixels that are less important. The algorithm identifies and removes pixels along a path of least energy in the image, which can be vertical or horizontal.
+The Seam Carving algorithm is a content-aware image resizing technique that reduces the size of an image by selectively removing pixels that are less important. The algorithm identifies and removes pixels along a path of least energy in the image.
 
 The Seam Carving GUI provides an easy-to-use interface for applying the Seam Carving algorithm to images. Users can select an input image and specify the desired output size by the number of seams. The algorithm then applies Seam Carving to the image and displays the resulting resized image. Additionally, the GUI includes a feature to detect whether an image has already been resized using Seam Carving. For this purpose, you use one of the five provided models. This has been trained on a data set to detect seam carving.
 
