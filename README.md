@@ -61,6 +61,40 @@ Implements the Seam Carving functionality.
 * remove_seam: Creates a copy of the image with the calculated seam removed
 * seam_carving: Implements the mentioned functions to remove a specific number of seams
 
+### data.py
+
+Provides functions to create suitable a pytorch dataset.
+
+* extract_data: Extracts data from folders and labels it
+* make_k_folds: Splits an array in k folds
+* DatasetSeamCarved: Pytorch dataset class
+
+### utils.py
+
+Methods for metric plotting.
+
+* make_plots: plots train and validation metrics for each fold
+* make_bars: plots test metrics
+
+### xception.py 
+
+https://github.com/tstandley/Xception-PyTorch modified to include softmax.
+
+### train.py
+
+All functions used in the training and testing process of the model.
+
+* make_train_step: Performs one training step and calculates metrics
+* make_valid_step: Performs one validation step and calculates metrics
+* train: Calls make_train_step, make_valid_step to train the model and logs the metrics
+* make_test_step: Performs one test step and calculates metrics
+* test: Calls make_test_step to test the model and logs the metrics
+
+### main.py
+
+Control and set training parameters for the training.
+Prepare data for training, start training and save the model and plots for the metrics.
+
 ## License
 
 The Seam Carving GUI is released for Prof. Jiang's Computer Vision lab at WWU.
